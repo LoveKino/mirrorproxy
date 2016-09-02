@@ -97,5 +97,12 @@ describe('index', () => {
 
         cache.removeCache(mc, 'a');
         assert.equal(mc.a, 10);
+
+        // hide
+        cache.cacheProp(mc, 'b', 30, {
+            hide: true
+        });
+        assert.equal(mc.b, 20);
+        assert.equal(cache.getProp(mc, 'b').value, 30);
     });
 });

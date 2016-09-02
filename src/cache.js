@@ -2,19 +2,35 @@
 
 const SECRET_KEY = '__cache__mirror__';
 
-let cacheProp = (obj, key, value, secretKey = SECRET_KEY) => {
+let cacheProp = (obj, key, value, {
+    secretKey = SECRET_KEY, hide
+} = {}) => {
     obj[secretKey] = obj[secretKey] || {};
     obj[secretKey][key] = {
-        value
+        value, hide
     };
 };
 
-let fromCache = (obj, key, secretKey = SECRET_KEY) => {
+let getProp = (obj, key, {
+    secretKey = SECRET_KEY
+} = {}) => {
     obj[secretKey] = obj[secretKey] || {};
     return obj[secretKey][key];
 };
 
-let removeCache = (obj, key, secretKey = SECRET_KEY) => {
+let fromCache = (obj, key, {
+    secretKey = SECRET_KEY
+} = {}) => {
+    obj[secretKey] = obj[secretKey] || {};
+    let v = obj[secretKey][key];
+    if (!v) return false;
+    if (v.hide) return false;
+    return v;
+};
+
+let removeCache = (obj, key, {
+    secretKey = SECRET_KEY
+} = {}) => {
     obj[secretKey] = obj[secretKey] || {};
     obj[secretKey][key] = undefined;
 };
@@ -22,5 +38,6 @@ let removeCache = (obj, key, secretKey = SECRET_KEY) => {
 module.exports = {
     cacheProp,
     fromCache,
-    removeCache
+    removeCache,
+    getProp
 };
