@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    mirrorProp, mirrorClass
+    mirrorProp, mirrorClass, cache
 } = require('..');
 
 let assert = require('assert');
@@ -60,8 +60,8 @@ describe('index', () => {
 
         let Mc = mirrorClass(clz, null, {
             getHandle: (v, prop) => {
-                if(prop === 'getA') {
-                    return function () {
+                if (prop === 'getA') {
+                    return function() {
                         return 2 * this.a;
                     };
                 }
@@ -73,5 +73,29 @@ describe('index', () => {
 
         assert.equal(mc.a, 10);
         assert.equal(mc.getA(), 20);
+    });
+
+    it('cache prop', () => {
+        let clz = function() {
+            this.a = 10;
+            this.b = 20;
+        };
+
+        let Mc = mirrorClass(clz, null, {
+            getHandle: (v, prop, obj) => {
+                if (cache.fromCache(obj, prop)) {
+                    return cache.fromCache(obj, prop).value;
+                }
+                return v;
+            }
+        });
+
+        let mc = new Mc();
+
+        cache.cacheProp(mc, 'a', 40);
+        assert.equal(mc.a, 40);
+
+        cache.removeCache(mc, 'a');
+        assert.equal(mc.a, 10);
     });
 });
