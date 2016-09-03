@@ -34,12 +34,12 @@ let reflectMirrorContext = (v, obj, shadow) => {
     return v;
 };
 
-let hide = (obj, shadow, name, {
+let hide = (name, {
     cacheOpts,
     getHandle = id
 } = {}) => {
     return {
-        setHandle: (v) => {
+        setHandle: (v, obj) => {
             cache.cacheProp(obj, name, v);
             return STOP_SETTING;
         },

@@ -36,7 +36,7 @@ describe('cache', () => {
             };
 
         mirrorProps(obj, shadow, [
-            hide(obj, shadow, 'a')
+            hide('a')
         ]);
 
         let init = obj.a;
@@ -53,7 +53,7 @@ describe('cache', () => {
             };
 
         mirrorProps(obj, shadow, [
-            hide(obj, shadow, 'a', {
+            hide('a', {
                 getHandle: v => v * 2
             })
         ]);
