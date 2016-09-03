@@ -34,6 +34,27 @@ let reflectMirrorContext = (v, obj, shadow) => {
     return v;
 };
 
+let hide = (obj, shadow, name, {
+    cacheOpts,
+    getHandle = id
+} = {}) => {
+    return {
+        setHandle: (v) => {
+            cache.cacheProp(obj, name, v);
+            return STOP_SETTING;
+        },
+
+        getHandle: (v, obj, shadow, name) => {
+            if (cache.fromCache(obj, name, cacheOpts)) {
+                return cache.fromCache(obj, name, cacheOpts).value;
+            }
+            return getHandle(v, obj, shadow, name);
+        },
+
+        name
+    };
+};
+
 let mirrorClass = (Origin, props = [], {
     mirrorName = '__secret_mirror_instance'
 } = {}) => {
@@ -108,5 +129,7 @@ module.exports = {
     mirrorProps,
     mirrorClass,
     cache,
-    STOP_SETTING
+    STOP_SETTING,
+    reflectMirrorContext,
+    hide
 };
