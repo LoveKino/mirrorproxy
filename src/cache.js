@@ -35,9 +35,18 @@ let removeCache = (obj, key, {
     obj[secretKey][key] = undefined;
 };
 
+let fetchPropValue = (obj, name, def, opts) => {
+    let cached = getProp(obj, name, opts);
+    if (!cached) {
+        cacheProp(obj, name, def, opts);
+    }
+    return getProp(obj, name).value;
+};
+
 module.exports = {
     cacheProp,
     fromCache,
     removeCache,
-    getProp
+    getProp,
+    fetchPropValue
 };

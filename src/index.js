@@ -8,7 +8,7 @@
  *
  * (proxy, origin)
  *
- * TODO dynamic decide prop's value
+ * proxy prop include get and set
  */
 
 let {
@@ -16,51 +16,41 @@ let {
 } = require('basetype');
 
 let {
-    forEach
+    forEach, map
 } = require('bolzano');
 
 let cache = require('./cache');
 
-let mirrorClass = (Origin, props, {
-    mirrorName = '__secret_mirror_instance', setHandle = id, getHandle = id
-} = {}) => {
-    props = props || [];
-
-    // mirror constructor
-    let ProxyClass = function() {
-        let nameMap = {};
-        let mirrorInst = this[mirrorName] = new Origin();
-
-        let mirror = (obj, ori, name) => {
-            if (nameMap[name]) return;
-            nameMap[name] = true;
-            mirrorProp(obj, ori, name, {
-                getHandle: (v, prop, obj) => {
-                    let newV = v;
-                    if (isFunction(v)) {
-                        newV = function(...args) {
-                            return v.apply(mirrorInst, args);
-                        };
-                    }
-                    return getHandle(newV, prop, obj);
-                },
-                setHandle
-            });
+let reflectMirrorContext = (v, obj, shadow) => {
+    if (isFunction(v)) {
+        return function(...args) {
+            let context = this;
+            if (context === obj) {
+                context = shadow;
+            }
+            return v.apply(context, args);
         };
+    }
+    return v;
+};
 
-        forEach(props, (prop) => {
-            mirror(this, mirrorInst, prop);
+let mirrorClass = (Origin, props = [], {
+    mirrorName = '__secret_mirror_instance'
+} = {}) => {
+    // mirror constructor
+    let ProxyClass = function(...args) {
+        let ctx = this;
+        let mirrorInst = ctx[mirrorName] = new Origin(...args);
+        let defProps = map(mirrorInst, (_, name) => {
+            return {
+                name,
+                getHandle: reflectMirrorContext
+            };
         });
+        props = defProps.concat(props);
 
-        forEach(mirrorInst, (_, name) => {
-            mirror(this, mirrorInst, name);
-        });
+        mirrorProps(ctx, mirrorInst, props);
     };
-
-    //static
-    forEach(Origin, (_, key) => {
-        mirrorProp(ProxyClass, Origin, key);
-    });
 
     // prototype
     ProxyClass.prototype = Origin.prototype;
@@ -68,27 +58,55 @@ let mirrorClass = (Origin, props, {
     return ProxyClass;
 };
 
-let mirrorProp = (obj, shadow, prop, {
-    setHandle = id, getHandle = id
-} = {}) => {
-    Object.defineProperty(obj, prop, {
-        set: (v) => {
-            v = setHandle(v, prop, obj);
-            // set to shadow
-            shadow[prop] = v;
-        },
-        get: () => {
-            // fetch from shadow
-            let v = shadow[prop];
-            return getHandle(v, prop, obj);
+/**
+ * props = [
+ *      {
+ *          name,
+ *          setHandle,  v => v
+ *          getHandle   v => v
+ *      }
+ * ]
+ */
+let mirrorProps = (obj, shadow, props = []) => {
+    let handleMap = {};
+    forEach(props, ({
+        name, setHandle = id, getHandle = id
+    }) => {
+        if (!handleMap[name]) {
+            Object.defineProperty(obj, name, {
+                set: (v) => {
+                    return handleMap[name].set(v);
+                },
+                get: () => {
+                    return handleMap[name].get();
+                }
+            });
         }
+        handleMap[name] = {
+            set: (v) => {
+                v = setHandle(v, obj, shadow, name);
+                if (v !== STOP_SETTING) {
+                    // set to shadow
+                    shadow[name] = v;
+                }
+            },
+
+            get: () => {
+                // fetch from shadow
+                let v = shadow[name];
+                return getHandle(v, obj, shadow, name);
+            }
+        };
     });
 };
+
+const STOP_SETTING = {};
 
 let id = v => v;
 
 module.exports = {
+    mirrorProps,
     mirrorClass,
-    mirrorProp,
-    cache
+    cache,
+    STOP_SETTING
 };
