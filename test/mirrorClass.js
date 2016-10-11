@@ -18,6 +18,7 @@ describe('mirrorclass', () => {
         let B = mirrorClass(A);
         let b = new B();
         assert.equal(b.getA(), 3);
+        assert.equal(b.a, 3);
     });
 
     it('getHandle', () => {
